@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boneya EOC Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet from cdnjs (more reliable than unpkg) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
   --red:#CC0000;--red-d:#990000;--red-h:#aa0000;--red-lt:rgba(204,0,0,0.07);
@@ -38,9 +39,7 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 /* SHELL */
 .shell{display:flex;min-height:calc(100vh - 94px)}
 
-/* ════════════════════════════
-   SIDEBAR
-════════════════════════════ */
+/* SIDEBAR */
 .sidebar{
   width:240px;flex-shrink:0;background:var(--white);
   border-right:1px solid var(--g200);
@@ -51,17 +50,14 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .sidebar.collapsed{width:0;border-right:none}
 .sb-inner{width:240px;display:flex;flex-direction:column;flex:1;overflow:hidden}
 
-/* search */
 .sb-search{padding:10px 10px 7px;flex-shrink:0}
 .sb-search input{width:100%;padding:6px 10px 6px 32px;border:1px solid var(--g200);border-radius:var(--r);font-family:var(--font);font-size:12px;color:var(--g700);background:var(--g50);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23A5A29F' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center}
 .sb-search input:focus{border-color:var(--red)}
 
-/* scroll area */
 .sb-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}
 .sb-scroll::-webkit-scrollbar{width:4px}
 .sb-scroll::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
 
-/* section headers */
 .sb-hd{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 12px 5px;font-size:9.5px;font-weight:700;letter-spacing:.1em;
@@ -74,7 +70,6 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .sb-body{overflow:hidden;transition:max-height .22s ease}
 .sb-body.hidden{max-height:0!important}
 
-/* items */
 .sb-item{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 12px 6px 18px;font-size:12px;color:var(--g700);
@@ -86,7 +81,6 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .sb-add{font-size:10.5px;color:var(--red);font-weight:700;padding:1px 6px;border-radius:3px;transition:background .12s;flex-shrink:0}
 .sb-add:hover{background:var(--red-lt)}
 
-/* sub-items (for nested menus) */
 .sb-sub{
   display:flex;align-items:center;justify-content:space-between;
   padding:5px 12px 5px 28px;font-size:11.5px;color:var(--g500);
@@ -95,10 +89,8 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .sb-sub:hover{background:var(--g50);color:var(--g700)}
 .sb-sub.active{color:var(--red);font-weight:500}
 
-/* badge on sidebar item */
 .sb-badge{background:var(--red);color:#fff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;flex-shrink:0}
 
-/* toggle arrow */
 .sb-toggle{
   position:fixed;top:110px;left:236px;z-index:400;
   width:20px;height:36px;background:var(--white);
@@ -111,7 +103,7 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .sb-toggle:hover{color:var(--red)}
 .sb-toggle.moved{left:0}
 
-/* ════ MAIN ════ */
+/* MAIN */
 .main{flex:1;min-width:0;padding:20px 26px 48px;transition:padding .25s}
 
 /* tabs */
@@ -134,7 +126,7 @@ body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:1
 .pg-title{font-size:21px;font-weight:700;color:var(--g900);margin-bottom:18px;letter-spacing:-.01em}
 
 /* form card */
-.fcard{background:var(--white);border:1px solid var(--g200);border-radius:6px;overflow:hidden;margin-bottom:16px;box-shadow:var(--sh)}
+.fcard{background:var(--white);border:1px solid var(--g200);border-radius:6px;overflow:hidden;margin-bottom:16px;box-shadow:var(--sh);position:relative;z-index:0;}
 .fcard-hd{background:var(--red);color:#fff;padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
 .fcard-body{padding:14px 18px}
 .frow{display:grid;grid-template-columns:180px 1fr;align-items:start;gap:12px;padding:9px 0;border-bottom:1px solid var(--g100)}
@@ -173,10 +165,29 @@ textarea{resize:vertical;min-height:88px}
 .act-bar{display:flex;justify-content:flex-end;gap:8px;padding:11px 18px;border-top:1px solid var(--g100);background:var(--g50)}
 
 /* map */
-.map-wrap{border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-top:8px}
-#leaflet-map{height:220px;width:100%}
+.map-wrap{
+  border:1px solid var(--g200);border-radius:var(--r);
+  overflow:hidden;margin-top:8px;
+  position:relative;     /* establish stacking context */
+  isolation:isolate;     /* prevent Leaflet panes leaking out */
+  z-index:0;             /* keep below sticky header/sidebar */
+}
+#leaflet-map{height:280px;width:100%;display:block;}
+/* Contain ALL Leaflet layers inside the map-wrap stacking context */
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane,
+.leaflet-map-pane { z-index:auto !important; }
+.leaflet-top,.leaflet-bottom{ z-index:1 !important; }
+/* Ensure sticky header always sits above map */
+.topbar{ z-index:300 !important; }
+.site-header{ z-index:290 !important; }
+.sb-toggle{ z-index:400 !important; }
 
-/* ════ PANELS for each sidebar section ════ */
 /* User Profiles */
 .profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:4px}
 .profile-card{background:var(--white);border:1px solid var(--g200);border-radius:6px;padding:16px;display:flex;gap:12px;align-items:center;box-shadow:var(--sh);cursor:pointer;transition:box-shadow .15s}
@@ -235,7 +246,7 @@ textarea{resize:vertical;min-height:88px}
 .theme-content{flex:1;border-radius:2px}
 .theme-label{padding:7px 10px;font-size:12px;font-weight:500;border-top:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
 
-/* ════ TABLE ════ */
+/* TABLE */
 .tbl-wrap{overflow-x:auto;border:1px solid var(--g200);border-radius:6px}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 thead tr{background:var(--red);color:#fff}
@@ -261,7 +272,7 @@ td.bold{color:var(--g900);font-weight:500}
 .empty-state .ei{font-size:40px;margin-bottom:10px}
 .empty-state p{font-size:14px}.empty-state small{font-size:12px;color:var(--g400)}
 
-/* ════ MODAL ════ */
+/* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:8px;width:560px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2);animation:mIn .22s ease}
@@ -310,7 +321,7 @@ td.bold{color:var(--g900);font-weight:500}
 <!-- TOP BAR -->
 <div class="topbar">
   <span class="online"><span class="dot"></span>&nbsp;ONLINE</span>
-  <span>WELCOME, <span class="user">hindada.boneya@icha.net</span></span>
+  <span>WELCOME, <span class="user"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bad2d3d4dedbdedb94d8d5d4dfc3dbfad3d9d2db94d4dfce">[email&#160;protected]</a></span></span>
   <span class="sep">|</span>
   <a href="#" onclick="toast('Redirecting to site…','info');return false">VIEW SITE</a>
   <span class="sep">/</span>
@@ -331,7 +342,7 @@ td.bold{color:var(--g900);font-weight:500}
 <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Toggle sidebar">&#9664;</button>
 
 <div class="shell">
-<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<!-- SIDEBAR -->
 <nav class="sidebar" id="sidebar">
 <div class="sb-inner">
   <div class="sb-search"><input type="text" id="sbSearch" placeholder="Start typing to filter…" oninput="filterSb(this.value)"></div>
@@ -391,9 +402,9 @@ td.bold{color:var(--g900);font-weight:500}
     <div class="sb-group" data-key="calllog">
       <div class="sb-hd" onclick="toggleGrp(this)">Call Log App<span class="sb-chev">▾</span></div>
       <div class="sb-body" style="max-height:200px">
-        <div class="sb-item active" id="nav-incident" data-label="incident reporter" onclick="nav('incident-list')">
+        <div class="sb-item active" id="nav-incident" data-label="incident reporter" onclick="nav('incident-add')">
           Incident Reporter
-          <span class="sb-add" onclick="event.stopPropagation();nav('incident-add')">+ Add</span>
+          <span class="sb-add" onclick="event.stopPropagation();nav('incident-list')">View All</span>
         </div>
       </div>
     </div>
@@ -425,15 +436,15 @@ td.bold{color:var(--g900);font-weight:500}
 </div><!-- /sb-inner -->
 </nav>
 
-<!-- ═══════════════ MAIN ═══════════════ -->
+<!-- MAIN -->
 <main class="main" id="mainArea">
 
 <!-- ══ INCIDENT REPORTER (list) ══ -->
-<div class="view active" id="p-incident-list">
+<div class="view" id="p-incident-list">
   <div class="breadcrumb">
-    <span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span>
-    <span class="crumb" onclick="nav('incident-list')">Call Log App</span><span class="sep">›</span>
-    <span>Incident Reporter</span>
+    <span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span>
+    <span class="crumb" onclick="nav('incident-add')">Call Log App</span><span class="sep">›</span>
+    <span>Incident Reporter — All Records</span>
   </div>
   <div class="form-actions-top">
     <div class="pg-title" style="margin-bottom:0">Incident Reporter</div>
@@ -459,18 +470,19 @@ td.bold{color:var(--g900);font-weight:500}
   </div>
 </div>
 
-<!-- ══ INCIDENT ADD/EDIT FORM ══ -->
-<div class="view" id="p-incident-add">
+<!-- ══ INCIDENT ADD/EDIT FORM — DEFAULT LANDING VIEW ══ -->
+<div class="view active" id="p-incident-add">
   <div class="breadcrumb" id="irAddCrumb">
-    <span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span>
+    <span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span>
     <span class="crumb" onclick="nav('incident-list')">Call Log App</span><span class="sep">›</span>
     <span class="crumb" onclick="nav('incident-list')">Incident Reporter</span><span class="sep">›</span>
     <span id="irAddCrumbLabel">Add Incident Reporter</span>
   </div>
   <div class="pg-title" id="irFormTitle">Add Incident Reporter</div>
 
+  <!-- SECTION 1: Incident Date -->
   <div class="fcard">
-    <div class="fcard-hd">Incident Date</div>
+    <div class="fcard-hd">1. Incident Date</div>
     <div class="fcard-body">
       <div class="frow">
         <div class="flabel">Date &amp; Time <span class="req">*</span></div>
@@ -488,8 +500,9 @@ td.bold{color:var(--g900);font-weight:500}
     </div>
   </div>
 
+  <!-- SECTION 2: Caller Details -->
   <div class="fcard">
-    <div class="fcard-hd">Caller Details</div>
+    <div class="fcard-hd">2. Caller Details</div>
     <div class="fcard-body">
       <div class="frow">
         <div class="flabel">Name of the caller <span class="req">*</span></div>
@@ -510,8 +523,9 @@ td.bold{color:var(--g900);font-weight:500}
     </div>
   </div>
 
+  <!-- SECTION 3: Caller / Incident Location -->
   <div class="fcard">
-    <div class="fcard-hd">Caller / Incident Location</div>
+    <div class="fcard-hd">3. Caller / Incident Location</div>
     <div class="fcard-body">
       <div class="frow">
         <div class="flabel">County <span class="req">*</span></div>
@@ -546,22 +560,26 @@ td.bold{color:var(--g900);font-weight:500}
         </div>
       </div>
       <div class="frow">
-        <div class="flabel">Geolocation</div>
+        <div class="flabel">Map Preview</div>
         <div class="ffield">
-          <div class="irow">
+          <div class="map-wrap"><div id="leaflet-map"></div></div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" id="myLocBtn" onclick="myLoc()">📍 Use My Exact Location</button>
+            <span id="myLocStatus" style="font-size:11.5px;color:var(--g500)">Click to pin your GPS position on the map</span>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="text" id="f-lat" placeholder="Latitude e.g. -1.2921" style="max-width:165px;font-family:var(--mono);font-size:12px" oninput="onGeoIn()">
             <input type="text" id="f-lng" placeholder="Longitude e.g. 36.8219" style="max-width:170px;font-family:var(--mono);font-size:12px" oninput="onGeoIn()">
-            <button class="btn-inline" onclick="myLoc()">📍 My Location</button>
           </div>
-          <div class="map-wrap"><div id="leaflet-map"></div></div>
-          <div class="fhint">Enter lat/lng manually if location search doesn't find the place</div>
+          <div class="fhint" style="margin-top:4px">Drag the pin or click the map to adjust. Coordinates update automatically.</div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- SECTION 4: Other Details -->
   <div class="fcard">
-    <div class="fcard-hd">Other Details</div>
+    <div class="fcard-hd">4. Other Details</div>
     <div class="act-bar">
       <button class="btn btn-ghost" onclick="saveAndAnother()">Save and add another</button>
       <button class="btn btn-ghost" onclick="saveAndContinue()">Save and continue editing</button>
@@ -597,12 +615,12 @@ td.bold{color:var(--g900);font-weight:500}
       </div>
     </div>
   </div>
-  <div class="status-note"><span class="sdot"></span> Records are saved to your browser session.</div>
+  <div class="status-note"><span class="sdot"></span> Records are saved to your browser session. <a href="#" onclick="nav('incident-list');return false" style="color:var(--red);text-decoration:none;margin-left:8px">View all records →</a></div>
 </div>
 
 <!-- ══ USER PROFILES ══ -->
 <div class="view" id="p-user-profiles">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>User Profiles</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>User Profiles</span></div>
   <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">User Profiles</div>
     <button class="btn btn-primary btn-sm" onclick="nav('user-profiles-add')">+ Add User</button></div><br>
   <div class="profile-grid" id="profileGrid"></div>
@@ -628,7 +646,7 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ THEMES ══ -->
 <div class="view" id="p-themes">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Themes</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Themes</span></div>
   <div class="pg-title">Themes</div>
   <p style="font-size:13px;color:var(--g500);margin-bottom:18px">Select the admin interface theme</p>
   <div class="theme-grid" id="themeGrid"></div>
@@ -636,7 +654,7 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ ASSET REGISTER ══ -->
 <div class="view" id="p-assets">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Asset Register</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Asset Register</span></div>
   <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Asset Register</div>
     <button class="btn btn-primary btn-sm" onclick="nav('asset-add')">+ Add Asset</button></div><br>
   <div class="tbl-wrap"><table>
@@ -664,7 +682,7 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ TOKENS ══ -->
 <div class="view" id="p-tokens">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Auth Tokens</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Auth Tokens</span></div>
   <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Auth Tokens</div>
     <button class="btn btn-primary btn-sm" onclick="nav('token-add')">+ Generate Token</button></div><br>
   <div class="fcard"><div id="tokenList"></div></div>
@@ -687,7 +705,7 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ GROUPS ══ -->
 <div class="view" id="p-groups">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Groups</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Groups</span></div>
   <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Groups</div>
     <button class="btn btn-primary btn-sm" onclick="nav('group-add')">+ Add Group</button></div><br>
   <div class="fcard"><div class="group-list" id="groupList"></div></div>
@@ -717,14 +735,14 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ DJANGO JOBS ══ -->
 <div class="view" id="p-django-jobs">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Django Jobs</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Django Jobs</span></div>
   <div class="pg-title">Django Jobs</div>
   <div class="fcard"><div id="jobList"></div></div>
 </div>
 
 <!-- ══ JOB EXECUTIONS ══ -->
 <div class="view" id="p-job-executions">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Job Executions</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Job Executions</span></div>
   <div class="pg-title">Django Job Executions</div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Job ID</th><th>Run Time</th><th>Duration</th><th>Status</th><th>Output</th></tr></thead>
@@ -734,7 +752,7 @@ td.bold{color:var(--g900);font-weight:500}
 
 <!-- ══ SITUATION REPORTER ══ -->
 <div class="view" id="p-situation-reporter">
-  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Situation Reporter</span></div>
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-add')">Home</span><span class="sep">›</span><span>Situation Reporter</span></div>
   <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Situation Reporter</div>
     <button class="btn btn-primary btn-sm" onclick="nav('situation-add')">+ New Situation Report</button></div><br>
   <div id="sitrepList"></div>
@@ -750,7 +768,7 @@ td.bold{color:var(--g900);font-weight:500}
     <div class="frow"><div class="flabel">Affected County</div><div class="ffield"><select id="ns-county" style="max-width:240px"><option value=""></option><option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Nakuru</option><option>Garissa</option><option>Tana River</option><option>Turkana</option></select></div></div>
     <div class="frow"><div class="flabel">Situation Summary <span class="req">*</span></div><div class="ffield"><textarea id="ns-summary" placeholder="Describe the situation…" style="min-height:120px"></textarea><div class="ferr" id="err-ns-summary">Required</div></div></div>
     <div class="frow"><div class="flabel">People Affected</div><div class="ffield"><input type="text" id="ns-affected" placeholder="e.g. 5,000" style="max-width:160px"></div></div>
-    <div class="frow"><div class="flabel">Response Status</div><div class="ffield"><select id="ns-status" style="max-width:200px"><option value=""></option><option>Active</option><option>Monitoring</	option><option>Closed</	option></select></div></div>
+    <div class="frow"><div class="flabel">Response Status</div><div class="ffield"><select id="ns-status" style="max-width:200px"><option value=""></option><option>Active</option><option>Monitoring</option><option>Closed</option></select></div></div>
   </div></div>
   <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
     <button class="btn btn-ghost" onclick="nav('situation-reporter')">Cancel</button>
@@ -865,6 +883,8 @@ function nav(page) {
   if(renders[page]) renders[page]();
 
   if(page==='incident-add' && !S.editId) resetForm();
+  // Re-render map tiles when the map panel becomes visible
+  if(page==='incident-add' && map){ setTimeout(()=>map.invalidateSize(), 100); }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -905,31 +925,99 @@ function filterSb(q){
 // MAP
 // ═══════════════════════════════════════════
 function initMap(){
-  map=L.map('leaflet-map').setView([-1.286389,36.817223],11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
-  marker=L.marker([-1.286389,36.817223],{draggable:true}).addTo(map);
-  marker.on('dragend',e=>{
-    const p=e.target.getLatLng();
-    document.getElementById('f-lat').value=p.lat.toFixed(6);
-    document.getElementById('f-lng').value=p.lng.toFixed(6);
-  });
-  map.on('click',e=>{
-    marker.setLatLng(e.latlng);
-    document.getElementById('f-lat').value=e.latlng.lat.toFixed(6);
-    document.getElementById('f-lng').value=e.latlng.lng.toFixed(6);
-  });
+  if(map) return; // prevent double init
+  if(typeof L === 'undefined'){ console.error('Leaflet not loaded'); return; }
+  try {
+    map=L.map('leaflet-map',{
+      zoomControl:true,
+      scrollWheelZoom:true,
+      renderer:L.canvas()
+    }).setView([-1.286389,36.817223],11);
+    // Keep all panes inside the isolation context
+    Object.values(map.getPanes()).forEach(pane=>{
+      if(pane && pane.style) pane.style.zIndex='';
+    });
+    // Primary tile layer
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom:19,
+      crossOrigin:true
+    });
+    // Fallback tile layer (CartoDB)
+    const cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+      attribution:'© OpenStreetMap © CartoDB',
+      maxZoom:19,
+      crossOrigin:true
+    });
+    osmLayer.addTo(map);
+    osmLayer.on('tileerror', function(){
+      if(!map._cartoFallback){
+        map._cartoFallback=true;
+        map.removeLayer(osmLayer);
+        cartoLayer.addTo(map);
+      }
+    });
+    marker=L.marker([-1.286389,36.817223],{draggable:true}).addTo(map);
+    marker.on('dragend',e=>{
+      const p=e.target.getLatLng();
+      document.getElementById('f-lat').value=p.lat.toFixed(6);
+      document.getElementById('f-lng').value=p.lng.toFixed(6);
+    });
+    map.on('click',e=>{
+      marker.setLatLng(e.latlng);
+      document.getElementById('f-lat').value=e.latlng.lat.toFixed(6);
+      document.getElementById('f-lng').value=e.latlng.lng.toFixed(6);
+    });
+    // Force size recalculation after a short delay (fixes grey tile bug when map was in hidden element)
+    setTimeout(()=>{ if(map) map.invalidateSize(); }, 150);
+    setTimeout(()=>{ if(map) map.invalidateSize(); }, 500);
+  } catch(e){ console.error('Map init error:',e); }
 }
 function onLocInput(v){clearTimeout(window._gt);if(v.trim())window._gt=setTimeout(()=>geocode(v),800)}
 function onCounty(){const v=document.getElementById('f-county').value;if(v)geocode(v+' County, Kenya')}
+
+// Kenya county approximate centers for instant fallback
+const COUNTY_COORDS={
+  'Baringo':[-0.4670,36.0437],'Bomet':[-0.7827,35.3418],'Bungoma':[0.5635,34.5606],
+  'Busia':[0.4607,34.1112],'Elgeyo-Marakwet':[0.8938,35.5036],'Embu':[-0.5333,37.4500],
+  'Garissa':[-0.4532,39.6460],'Homa Bay':[-0.5273,34.4571],'Isiolo':[0.3556,37.5822],
+  'Kajiado':[-1.8522,36.7820],'Kakamega':[0.2827,34.7519],'Kericho':[-0.3688,35.2863],
+  'Kiambu':[-1.0310,36.8245],'Kilifi':[-3.6305,39.8499],'Kirinyaga':[-0.6586,37.3822],
+  'Kisii':[-0.6817,34.7660],'Kisumu':[-0.0917,34.7679],'Kitui':[-1.3671,38.0106],
+  'Kwale':[-4.1823,39.4520],'Laikipia':[-0.3606,36.7820],'Lamu':[-2.2694,40.9021],
+  'Machakos':[-1.5177,37.2634],'Makueni':[-1.8036,37.6244],'Mandera':[3.9366,41.8670],
+  'Marsabit':[2.3284,37.9897],'Meru':[0.0467,37.6490],'Migori':[-1.0634,34.4731],
+  'Mombasa':[-4.0435,39.6682],"Murang'a":[-0.7833,37.0333],'Nairobi':[-1.2864,36.8172],
+  'Nakuru':[-0.3031,36.0800],'Nandi':[0.1836,35.1042],'Narok':[-1.0816,35.8700],
+  'Nyamira':[-0.5670,34.9350],'Nyandarua':[-0.1833,36.5167],'Nyeri':[-0.4167,36.9500],
+  'Samburu':[1.2167,36.9333],'Siaya':[0.0610,34.2422],'Taita-Taveta':[-3.3160,38.3670],
+  'Tana River':[-1.6609,39.9500],'Tharaka-Nithi':[-0.2994,37.7744],'Trans-Nzoia':[1.0567,35.0000],
+  'Turkana':[3.1167,35.5964],'Uasin Gishu':[0.5500,35.2700],'Vihiga':[0.0833,34.7167],
+  'Wajir':[1.7471,40.0573],'West Pokot':[1.6204,35.1171]
+};
+
 function geocode(q){
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q+', Kenya')}&limit=1`)
-    .then(r=>r.json()).then(d=>{
-      if(d&&d[0]){const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon);
-        map.setView([lat,lng],14);marker.setLatLng([lat,lng]);
+  // 1. Try instant county lookup first
+  const county = document.getElementById('f-county').value;
+  if(COUNTY_COORDS[county] && q.includes('County')){
+    const [lat,lng]=COUNTY_COORDS[county];
+    if(map){ map.setView([lat,lng],11); marker.setLatLng([lat,lng]); }
+    document.getElementById('f-lat').value=lat.toFixed(6);
+    document.getElementById('f-lng').value=lng.toFixed(6);
+  }
+  // 2. Also try Nominatim for more precise location
+  const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q+', Kenya')}&limit=1&countrycodes=ke`;
+  fetch(url,{headers:{'Accept-Language':'en','User-Agent':'EOC-Admin/1.0'}})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d=>{
+      if(d&&d[0]){
+        const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon);
+        if(map){ map.setView([lat,lng],14); marker.setLatLng([lat,lng]); }
         document.getElementById('f-lat').value=lat.toFixed(6);
         document.getElementById('f-lng').value=lng.toFixed(6);
       }
-    }).catch(()=>{});
+    })
+    .catch(()=>{}); // silent fail — county coords already shown
 }
 function onGeoIn(){
   const lat=parseFloat(document.getElementById('f-lat').value),lng=parseFloat(document.getElementById('f-lng').value);
@@ -937,14 +1025,37 @@ function onGeoIn(){
 }
 function myLoc(){
   if(!navigator.geolocation){toast('Geolocation not supported','error');return}
-  toast('Getting your location…','info');
+  const btn=document.getElementById('myLocBtn');
+  const status=document.getElementById('myLocStatus');
+  btn.disabled=true;
+  btn.textContent='⏳ Detecting…';
+  if(status) status.textContent='Acquiring GPS signal…';
   navigator.geolocation.getCurrentPosition(p=>{
     const lat=p.coords.latitude,lng=p.coords.longitude;
     document.getElementById('f-lat').value=lat.toFixed(6);
     document.getElementById('f-lng').value=lng.toFixed(6);
-    map.setView([lat,lng],15);marker.setLatLng([lat,lng]);
-    toast('Location detected','success');
-  },()=>toast('Could not get location','error'));
+    if(map){ map.setView([lat,lng],17); marker.setLatLng([lat,lng]); }
+    btn.disabled=false;
+    btn.textContent='📍 Use My Exact Location';
+    if(status) status.textContent=`✅ Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    toast('Location detected and pinned on map','success');
+    // Reverse geocode to auto-fill location field if empty
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`)
+      .then(r=>r.json()).then(d=>{
+        if(d&&d.display_name){
+          const locFld=document.getElementById('f-location');
+          if(!locFld.value) locFld.value=d.display_name.split(',').slice(0,3).join(', ');
+        }
+      }).catch(()=>{});
+  },err=>{
+    btn.disabled=false;
+    btn.textContent='📍 Use My Exact Location';
+    const msg=err.code===1?'Location permission denied — please allow location access in your browser':
+               err.code===2?'Position unavailable — try again or enter coordinates manually':
+               'Location request timed out';
+    if(status) status.textContent='⚠️ '+msg;
+    toast(msg,'error');
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
 
 // ═══════════════════════════════════════════
@@ -1396,18 +1507,13 @@ function bc(s){return{Open:'badge-open','In Progress':'badge-prog',Resolved:'bad
 function dr(label,val){return`<div class="d-row"><div class="d-label">${label}</div><div class="d-val">${val||''}</div></div>`}
 
 // ═══════════════════════════════════════════
-// BOOT
+// BOOT — default landing: incident-add form
 // ═══════════════════════════════════════════
 window.addEventListener('load',()=>{
-  initMap();
-  setToday();setNow();
-  // add IDs to nav items for active state tracking
-  const navMap={
-    'user-profiles':'nav-user','themes':'nav-themes','assets':'nav-assets',
-    'tokens':'nav-tokens','groups':'nav-groups','django-jobs':'nav-django-jobs',
-    'job-executions':'nav-job-exec','situation-reporter':'nav-sitrep',
-  };
-  // already set in HTML for incident reporter, assign others dynamically
+  setToday();
+  setNow();
+
+  // assign IDs to nav items for active state tracking
   document.querySelectorAll('.sb-item').forEach(el=>{
     const lbl=el.dataset.label||'';
     if(lbl==='user profiles')el.id='nav-user';
@@ -1419,7 +1525,22 @@ window.addEventListener('load',()=>{
     else if(lbl==='django job executions')el.id='nav-job-exec';
     else if(lbl==='situation reporter')el.id='nav-sitrep';
   });
-  renderIR();
+
+  S.editId = null;
+  const navEl = document.getElementById('nav-incident');
+  if(navEl) navEl.classList.add('active');
+
+  // Wait for Leaflet to be available, then init map
+  function waitForLeaflet(attempts) {
+    if (typeof L !== 'undefined') {
+      initMap();
+    } else if (attempts > 0) {
+      setTimeout(() => waitForLeaflet(attempts - 1), 200);
+    } else {
+      console.error('Leaflet failed to load after retries');
+    }
+  }
+  waitForLeaflet(20);
 });
 </script>
 </body>
