@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kenya Red Cross EOC Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --red:#CC0000;--red-d:#990000;--red-h:#aa0000;--red-lt:rgba(204,0,0,0.07);
+  --white:#fff;--off:#F5F3F1;
+  --g50:#F9F8F7;--g100:#EFEDEB;--g200:#E0DDDB;--g300:#C5C2BF;
+  --g400:#A5A29F;--g500:#757270;--g700:#3A3836;--g900:#1A1816;
+  --nav:#181614;--font:"DM Sans",sans-serif;--mono:"DM Mono",monospace;
+  --r:4px;--sh:0 1px 4px rgba(0,0,0,.09);--sh2:0 6px 24px rgba(0,0,0,.13);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--off);color:var(--g900);font-size:13.5px;line-height:1.55;min-height:100vh}
+
+/* TOP BAR */
+.topbar{background:var(--nav);color:#888;font-size:11.5px;padding:0 18px;height:30px;display:flex;align-items:center;justify-content:flex-end;gap:11px;position:sticky;top:0;z-index:300}
+.topbar .dot{width:7px;height:7px;border-radius:50%;background:#4CAF50}
+.topbar .online{display:flex;align-items:center;gap:5px}
+.topbar .user{color:#ddd;font-weight:600}
+.topbar a{color:#777;text-decoration:none;transition:color .15s}
+.topbar a:hover{color:#fff}
+.topbar .sep{color:#3a3a3a}
+
+/* HEADER */
+.site-header{background:var(--red);height:64px;padding:0 20px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(160,0,0,.35);position:sticky;top:30px;z-index:290}
+.site-header img.logo{height:50px;width:auto;object-fit:contain;flex-shrink:0}
+.logo-rule{width:1px;height:38px;background:rgba(255,255,255,.3)}
+.logo-text h1{color:#fff;font-size:15px;font-weight:700;line-height:1.2}
+.logo-text p{color:rgba(255,255,255,.65);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+
+/* SHELL */
+.shell{display:flex;min-height:calc(100vh - 94px)}
+
+/* ════════════════════════════
+   SIDEBAR
+════════════════════════════ */
+.sidebar{
+  width:240px;flex-shrink:0;background:var(--white);
+  border-right:1px solid var(--g200);
+  position:sticky;top:94px;height:calc(100vh - 94px);
+  overflow:hidden;transition:width .25s ease;
+  display:flex;flex-direction:column;
+}
+.sidebar.collapsed{width:0;border-right:none}
+.sb-inner{width:240px;display:flex;flex-direction:column;flex:1;overflow:hidden}
+
+/* search */
+.sb-search{padding:10px 10px 7px;flex-shrink:0}
+.sb-search input{width:100%;padding:6px 10px 6px 32px;border:1px solid var(--g200);border-radius:var(--r);font-family:var(--font);font-size:12px;color:var(--g700);background:var(--g50);outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23A5A29F' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center}
+.sb-search input:focus{border-color:var(--red)}
+
+/* scroll area */
+.sb-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}
+.sb-scroll::-webkit-scrollbar{width:4px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
+
+/* section headers */
+.sb-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 5px;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;background:var(--red);color:#fff;
+  cursor:pointer;user-select:none;margin-top:3px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.sb-hd .sb-chev{font-size:10px;transition:transform .2s;opacity:.8}
+.sb-hd.closed .sb-chev{transform:rotate(-90deg)}
+.sb-body{overflow:hidden;transition:max-height .22s ease}
+.sb-body.hidden{max-height:0!important}
+
+/* items */
+.sb-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 6px 18px;font-size:12px;color:var(--g700);
+  cursor:pointer;transition:background .12s;white-space:nowrap;
+  border-left:3px solid transparent;
+}
+.sb-item:hover{background:var(--g50);color:var(--g900)}
+.sb-item.active{background:var(--red-lt);color:var(--red);font-weight:600;border-left-color:var(--red)}
+.sb-add{font-size:10.5px;color:var(--red);font-weight:700;padding:1px 6px;border-radius:3px;transition:background .12s;flex-shrink:0}
+.sb-add:hover{background:var(--red-lt)}
+
+/* sub-items (for nested menus) */
+.sb-sub{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 12px 5px 28px;font-size:11.5px;color:var(--g500);
+  cursor:pointer;transition:background .12s;white-space:nowrap;
+}
+.sb-sub:hover{background:var(--g50);color:var(--g700)}
+.sb-sub.active{color:var(--red);font-weight:500}
+
+/* badge on sidebar item */
+.sb-badge{background:var(--red);color:#fff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;flex-shrink:0}
+
+/* toggle arrow */
+.sb-toggle{
+  position:fixed;top:110px;left:236px;z-index:400;
+  width:20px;height:36px;background:var(--white);
+  border:1px solid var(--g200);border-left:none;
+  border-radius:0 4px 4px 0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--g400);transition:left .25s,color .15s;
+  box-shadow:2px 0 6px rgba(0,0,0,.07);
+}
+.sb-toggle:hover{color:var(--red)}
+.sb-toggle.moved{left:0}
+
+/* ════ MAIN ════ */
+.main{flex:1;min-width:0;padding:20px 26px 48px;transition:padding .25s}
+
+/* tabs */
+.tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:2px solid var(--g200)}
+.tab{padding:9px 20px;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--g500);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--g700)}
+.tab.active{color:var(--red);border-bottom-color:var(--red);font-weight:700}
+.tab .cnt{font-size:10.5px;background:var(--g200);color:var(--g700);padding:1px 7px;border-radius:20px;font-weight:600}
+.tab.active .cnt{background:var(--red);color:#fff}
+
+/* views */
+.view{display:none}.view.active{display:block}
+
+/* breadcrumb */
+.breadcrumb{font-size:12px;color:var(--g500);margin-bottom:14px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.breadcrumb .crumb{color:var(--red);cursor:pointer}.breadcrumb .crumb:hover{text-decoration:underline}
+.breadcrumb .sep{color:var(--g300)}
+
+/* page title */
+.pg-title{font-size:21px;font-weight:700;color:var(--g900);margin-bottom:18px;letter-spacing:-.01em}
+
+/* form card */
+.fcard{background:var(--white);border:1px solid var(--g200);border-radius:6px;overflow:hidden;margin-bottom:16px;box-shadow:var(--sh)}
+.fcard-hd{background:var(--red);color:#fff;padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.fcard-body{padding:14px 18px}
+.frow{display:grid;grid-template-columns:180px 1fr;align-items:start;gap:12px;padding:9px 0;border-bottom:1px solid var(--g100)}
+.frow:last-child{border-bottom:none}
+.flabel{font-size:12.5px;font-weight:500;color:var(--g700);padding-top:7px;line-height:1.3}
+.flabel .req{color:var(--red)}
+.ffield{display:flex;flex-direction:column;gap:4px}
+.fhint{font-size:11px;color:var(--g500)}
+.ferr{font-size:11px;color:var(--red);font-weight:500;display:none}
+.ferr.show{display:block}
+
+/* inputs */
+input[type=text],input[type=date],input[type=time],input[type=tel],input[type=email],input[type=search],select,textarea{
+  font-family:var(--font);font-size:13px;color:var(--g900);background:var(--white);
+  border:1px solid var(--g300);border-radius:var(--r);padding:7px 10px;outline:none;width:100%;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(204,0,0,.08)}
+input.invalid,select.invalid,textarea.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,.08)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23797673' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+textarea{resize:vertical;min-height:88px}
+.irow{display:flex;gap:8px;align-items:center}
+.irow input,.irow select{flex:1}
+
+/* buttons */
+.btn-inline{padding:6px 11px;background:var(--g100);border:1px solid var(--g200);border-radius:var(--r);font-family:var(--font);font-size:12px;font-weight:500;color:var(--g700);cursor:pointer;white-space:nowrap;transition:background .15s}
+.btn-inline:hover{background:var(--g200)}
+.btn{padding:8px 16px;border-radius:var(--r);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+.btn-ghost{background:var(--white);border-color:var(--g300);color:var(--g700)}.btn-ghost:hover{background:var(--g100)}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red)}.btn-primary:hover{background:var(--red-h)}
+.btn-danger{background:#fff;color:#c62828;border-color:#ef9a9a}.btn-danger:hover{background:#ffebee}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-xs{padding:3px 8px;font-size:11px}
+
+/* action bar */
+.act-bar{display:flex;justify-content:flex-end;gap:8px;padding:11px 18px;border-top:1px solid var(--g100);background:var(--g50)}
+
+/* map */
+.map-wrap{border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-top:8px}
+#leaflet-map{height:220px;width:100%}
+
+/* ════ PANELS for each sidebar section ════ */
+/* User Profiles */
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:4px}
+.profile-card{background:var(--white);border:1px solid var(--g200);border-radius:6px;padding:16px;display:flex;gap:12px;align-items:center;box-shadow:var(--sh);cursor:pointer;transition:box-shadow .15s}
+.profile-card:hover{box-shadow:var(--sh2)}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.profile-info .name{font-weight:600;font-size:13px}
+.profile-info .role{font-size:11px;color:var(--g500);margin-top:1px}
+.profile-info .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+
+/* tokens */
+.token-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100)}
+.token-row:last-child{border-bottom:none}
+.token-key{font-family:var(--mono);font-size:12px;background:var(--g50);border:1px solid var(--g200);padding:4px 10px;border-radius:var(--r);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.token-name{font-size:12.5px;font-weight:500;min-width:110px}
+.token-date{font-size:11px;color:var(--g500);min-width:80px}
+
+/* asset register */
+.asset-tbl table{width:100%;border-collapse:collapse;font-size:12.5px}
+.asset-tbl thead tr{background:var(--red);color:#fff}
+.asset-tbl th{padding:8px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.asset-tbl td{padding:8px 12px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+.asset-tbl tr:last-child td{border-bottom:none}
+.asset-tbl tr:hover td{background:var(--g50)}
+
+/* groups */
+.group-list .group-item{padding:11px 14px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .12s}
+.group-list .group-item:hover{background:var(--g50)}
+.group-item .gname{font-weight:600;font-size:13px}
+.group-item .gmeta{font-size:11px;color:var(--g500);margin-top:2px}
+.group-item .gperm{font-size:11px;color:var(--g500)}
+
+/* situation reporter */
+.sitrep-card{background:var(--white);border:1px solid var(--g200);border-radius:6px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh)}
+.sitrep-card .sr-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.sitrep-card .sr-title{font-weight:600;font-size:13.5px}
+.sitrep-card .sr-meta{font-size:11px;color:var(--g500);margin-top:2px}
+.sitrep-card .sr-body{font-size:12.5px;color:var(--g700);line-height:1.5}
+
+/* django jobs */
+.job-row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--g100);font-size:12.5px}
+.job-row:last-child{border-bottom:none}
+.job-name{font-weight:500;flex:1}
+.job-schedule{font-family:var(--mono);font-size:11.5px;color:var(--g500);min-width:130px}
+.job-next{font-size:11px;color:var(--g500);min-width:120px}
+.job-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* themes */
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.theme-card{border:2px solid var(--g200);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.theme-card:hover{border-color:var(--g400);box-shadow:var(--sh2)}
+.theme-card.selected{border-color:var(--red)}
+.theme-preview{height:80px;display:flex;flex-direction:column}
+.theme-bar{height:18px}
+.theme-body{flex:1;display:flex;gap:5px;padding:5px}
+.theme-sidebar{width:30px;border-radius:2px}
+.theme-content{flex:1;border-radius:2px}
+.theme-label{padding:7px 10px;font-size:12px;font-weight:500;border-top:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
+
+/* ════ TABLE ════ */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--g200);border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead tr{background:var(--red);color:#fff}
+thead th{padding:9px 14px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--g100);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--g50)}
+tbody td{padding:9px 14px;color:var(--g700);vertical-align:middle}
+td.bold{color:var(--g900);font-weight:500}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-open{background:#FFF3E0;color:#E65100}
+.badge-prog{background:#E3F2FD;color:#1565C0}
+.badge-res{background:#E8F5E9;color:#2E7D32}
+.badge-cls{background:#F3E5F5;color:#6A1B9A}
+.badge-act{background:#E8F5E9;color:#2E7D32}
+.badge-ina{background:#FAFAFA;color:#757575}
+.badge-low{background:#FFF8E1;color:#F57F17}
+.badge-med{background:#FFF3E0;color:#E65100}
+.badge-hi{background:#FFEBEE;color:#C62828}
+.tbl-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.tbl-toolbar input[type=text]{max-width:250px;font-size:12.5px}
+.empty-state{padding:48px 20px;text-align:center;color:var(--g500)}
+.empty-state .ei{font-size:40px;margin-bottom:10px}
+.empty-state p{font-size:14px}.empty-state small{font-size:12px;color:var(--g400)}
+
+/* ════ MODAL ════ */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:8px;width:560px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2);animation:mIn .22s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--g200)}
+.modal-hd h2{font-size:15px;font-weight:700}
+.modal-hd .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g500);transition:color .15s;line-height:1}
+.modal-hd .close-btn:hover{color:var(--g900)}
+.modal-body{padding:18px 20px}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--g200);display:flex;justify-content:flex-end;gap:8px}
+
+/* detail rows */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 22px;font-size:13px}
+.d-row .d-label{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.d-row .d-val{color:var(--g900)}
+
+/* confirm */
+.confirm-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center}
+.confirm-bg.open{display:flex}
+.confirm-box{background:#fff;border-radius:8px;padding:26px 28px;width:360px;max-width:95vw;box-shadow:var(--sh2);text-align:center}
+.confirm-box h3{font-size:16px;font-weight:700;margin-bottom:10px}
+.confirm-box p{font-size:13px;color:var(--g500);margin-bottom:22px}
+.confirm-box .cacts{display:flex;justify-content:center;gap:10px}
+
+/* toast */
+.toast-wrap{position:fixed;bottom:24px;right:22px;z-index:999;display:flex;flex-direction:column;gap:9px}
+.toast{display:flex;align-items:center;gap:11px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:6px;font-size:13px;min-width:240px;max-width:360px;box-shadow:var(--sh2);animation:tIn .28s ease;border-left:4px solid var(--red)}
+.toast.success{border-left-color:#43A047}.toast.error{border-left-color:#e53935}.toast.info{border-left-color:#1976D2}.toast.warn{border-left-color:#FB8C00}
+.toast-icon{font-size:17px;flex-shrink:0}
+.toast-msg{flex:1;line-height:1.4}
+.toast-x{background:none;border:none;color:#aaa;cursor:pointer;font-size:16px;flex-shrink:0}
+.toast-x:hover{color:#fff}
+@keyframes tIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tOut{to{opacity:0;transform:translateY(8px)}}
+
+/* status note */
+.status-note{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--g500);margin-top:6px}
+.status-note .sdot{width:6px;height:6px;border-radius:50%;background:#4CAF50}
+
+/* form add/edit panel */
+.form-actions-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="online"><span class="dot"></span>&nbsp;ONLINE</span>
+  <span>WELCOME, <span class="user">hindada.boneya@icha.net</span></span>
+  <span class="sep">|</span>
+  <a href="#" onclick="toast('Redirecting to site…','info');return false">VIEW SITE</a>
+  <span class="sep">/</span>
+  <a href="#" onclick="openChangePassword();return false">CHANGE PASSWORD</a>
+  <span class="sep">/</span>
+  <a href="#" onclick="toast('Logged out','success');return false">LOG OUT</a>
+</div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo-rule"></div>
+  <div class="logo-text">
+    <h1>Emergency Operations Centre</h1>
+  </div>
+</header>
+
+<!-- SIDEBAR TOGGLE -->
+<button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Toggle sidebar">&#9664;</button>
+
+<div class="shell">
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav class="sidebar" id="sidebar">
+<div class="sb-inner">
+  <div class="sb-search"><input type="text" id="sbSearch" placeholder="Start typing to filter…" oninput="filterSb(this.value)"></div>
+  <div class="sb-scroll" id="sbScroll">
+
+    <!-- ACCOUNTS -->
+    <div class="sb-group" data-key="accounts">
+      <div class="sb-hd" onclick="toggleGrp(this)">Accounts<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="user profiles" onclick="nav('user-profiles')">
+          User profiles <span class="sb-add" onclick="event.stopPropagation();nav('user-profiles-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN INTERFACE -->
+    <div class="sb-group" data-key="admin">
+      <div class="sb-hd" onclick="toggleGrp(this)">Admin Interface<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="themes" onclick="nav('themes')">
+          Themes <span class="sb-add" onclick="event.stopPropagation();nav('themes')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSET TRACKER -->
+    <div class="sb-group" data-key="assets">
+      <div class="sb-hd" onclick="toggleGrp(this)">Asset Tracker<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="asset register" onclick="nav('assets')">
+          Asset Register <span class="sb-add" onclick="event.stopPropagation();nav('asset-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTH TOKEN -->
+    <div class="sb-group" data-key="auth-token">
+      <div class="sb-hd" onclick="toggleGrp(this)">Auth Token<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="tokens" onclick="nav('tokens')">
+          Tokens <span class="sb-add" onclick="event.stopPropagation();nav('token-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTH & AUTHORIZATION -->
+    <div class="sb-group" data-key="auth-authz">
+      <div class="sb-hd" onclick="toggleGrp(this)">Authentication &amp; Authorization<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="groups" onclick="nav('groups')">
+          Groups <span class="sb-add" onclick="event.stopPropagation();nav('group-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALL LOG APP -->
+    <div class="sb-group" data-key="calllog">
+      <div class="sb-hd" onclick="toggleGrp(this)">Call Log App<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item active" id="nav-incident" data-label="incident reporter" onclick="nav('incident-list')">
+          Incident Reporter
+          <span class="sb-add" onclick="event.stopPropagation();nav('incident-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DJANGO APSCHEDULER -->
+    <div class="sb-group" data-key="scheduler">
+      <div class="sb-hd" onclick="toggleGrp(this)">Django APScheduler<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="django job executions" onclick="nav('job-executions')">
+          Django job executions <span class="sb-add" onclick="event.stopPropagation();toast('Add Job Execution','info')">+ Add</span>
+        </div>
+        <div class="sb-item" data-label="django jobs" onclick="nav('django-jobs')">
+          Django jobs <span class="sb-add" onclick="event.stopPropagation();nav('django-jobs')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SITUATION REPORTER -->
+    <div class="sb-group" data-key="sitrep">
+      <div class="sb-hd" onclick="toggleGrp(this)">Situation Reporter<span class="sb-chev">▾</span></div>
+      <div class="sb-body" style="max-height:200px">
+        <div class="sb-item" data-label="situation reporter" onclick="nav('situation-reporter')">
+          Situation Reporter <span class="sb-add" onclick="event.stopPropagation();nav('situation-add')">+ Add</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sb-scroll -->
+</div><!-- /sb-inner -->
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="main" id="mainArea">
+
+<!-- ══ INCIDENT REPORTER (list) ══ -->
+<div class="view active" id="p-incident-list">
+  <div class="breadcrumb">
+    <span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span>
+    <span class="crumb" onclick="nav('incident-list')">Call Log App</span><span class="sep">›</span>
+    <span>Incident Reporter</span>
+  </div>
+  <div class="form-actions-top">
+    <div class="pg-title" style="margin-bottom:0">Incident Reporter</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('incident-add')">+ Add Incident Reporter</button>
+  </div>
+  <br>
+  <div class="tbl-toolbar">
+    <input type="text" id="irSearch" placeholder="Search…" oninput="renderIR()">
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="irStatusF" onchange="renderIR()" style="max-width:150px;font-size:12.5px">
+        <option value="">All Statuses</option>
+        <option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option>
+      </select>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th>#</th><th>Date</th><th>Caller Name</th><th>Phone</th>
+      <th>County</th><th>Location</th><th>Intervention</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody id="irBody"></tbody></table>
+    <div class="empty-state" id="irEmpty"><div class="ei">📋</div><p>No incident reports yet</p><small>Click "+ Add Incident Reporter" to log your first incident</small></div>
+  </div>
+</div>
+
+<!-- ══ INCIDENT ADD/EDIT FORM ══ -->
+<div class="view" id="p-incident-add">
+  <div class="breadcrumb" id="irAddCrumb">
+    <span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span>
+    <span class="crumb" onclick="nav('incident-list')">Call Log App</span><span class="sep">›</span>
+    <span class="crumb" onclick="nav('incident-list')">Incident Reporter</span><span class="sep">›</span>
+    <span id="irAddCrumbLabel">Add Incident Reporter</span>
+  </div>
+  <div class="pg-title" id="irFormTitle">Add Incident Reporter</div>
+
+  <div class="fcard">
+    <div class="fcard-hd">Incident Date</div>
+    <div class="fcard-body">
+      <div class="frow">
+        <div class="flabel">Date &amp; Time <span class="req">*</span></div>
+        <div class="ffield">
+          <div class="irow"><span style="font-size:12px;color:var(--g500);min-width:34px">Date:</span>
+            <input type="date" id="f-date" style="max-width:155px">
+            <button class="btn-inline" onclick="setToday()">Today</button></div>
+          <div class="irow" style="margin-top:6px"><span style="font-size:12px;color:var(--g500);min-width:34px">Time:</span>
+            <input type="time" id="f-time" style="max-width:125px">
+            <button class="btn-inline" onclick="setNow()">Now</button></div>
+          <div class="fhint">Captures the date and time when the incident occurred</div>
+          <div class="ferr" id="err-date">Date and time are required</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-hd">Caller Details</div>
+    <div class="fcard-body">
+      <div class="frow">
+        <div class="flabel">Name of the caller <span class="req">*</span></div>
+        <div class="ffield"><input type="text" id="f-name" placeholder="Full name" style="max-width:320px">
+          <div class="ferr" id="err-name">Caller name is required</div></div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Caller gender</div>
+        <div class="ffield"><select id="f-gender" style="max-width:220px">
+          <option value=""></option><option>Male</option><option>Female</option><option>Other / Prefer not to say</option>
+        </select></div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Caller phone <span class="req">*</span></div>
+        <div class="ffield"><input type="tel" id="f-phone" placeholder="+254 700 000 000" style="max-width:220px">
+          <div class="ferr" id="err-phone">Phone number is required</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-hd">Caller / Incident Location</div>
+    <div class="fcard-body">
+      <div class="frow">
+        <div class="flabel">County <span class="req">*</span></div>
+        <div class="ffield">
+          <select id="f-county" style="max-width:240px" onchange="onCounty()">
+            <option value=""></option>
+            <option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option>
+            <option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option>
+            <option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option>
+            <option>Kakamega</option><option>Kericho</option><option>Kiambu</option>
+            <option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option>
+            <option>Kisumu</option><option>Kitui</option><option>Kwale</option>
+            <option>Laikipia</option><option>Lamu</option><option>Machakos</option>
+            <option>Makueni</option><option>Mandera</option><option>Marsabit</option>
+            <option>Meru</option><option>Migori</option><option>Mombasa</option>
+            <option>Murang'a</option><option>Nairobi</option><option>Nakuru</option>
+            <option>Nandi</option><option>Narok</option><option>Nyamira</option>
+            <option>Nyandarua</option><option>Nyeri</option><option>Samburu</option>
+            <option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option>
+            <option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option>
+            <option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option>
+          </select>
+          <div class="ferr" id="err-county">County is required</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Location <span class="req">*</span></div>
+        <div class="ffield">
+          <input type="text" id="f-location" placeholder="e.g. Buruburu, Nairobi" oninput="onLocInput(this.value)">
+          <div class="fhint">Provide the most accurate location. Map updates automatically.</div>
+          <div class="ferr" id="err-location">Location is required</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Geolocation</div>
+        <div class="ffield">
+          <div class="irow">
+            <input type="text" id="f-lat" placeholder="Latitude e.g. -1.2921" style="max-width:165px;font-family:var(--mono);font-size:12px" oninput="onGeoIn()">
+            <input type="text" id="f-lng" placeholder="Longitude e.g. 36.8219" style="max-width:170px;font-family:var(--mono);font-size:12px" oninput="onGeoIn()">
+            <button class="btn-inline" onclick="myLoc()">📍 My Location</button>
+          </div>
+          <div class="map-wrap"><div id="leaflet-map"></div></div>
+          <div class="fhint">Enter lat/lng manually if location search doesn't find the place</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-hd">Other Details</div>
+    <div class="act-bar">
+      <button class="btn btn-ghost" onclick="saveAndAnother()">Save and add another</button>
+      <button class="btn btn-ghost" onclick="saveAndContinue()">Save and continue editing</button>
+      <button class="btn btn-primary" onclick="saveIR()">SAVE</button>
+    </div>
+    <div class="fcard-body">
+      <div class="frow">
+        <div class="flabel">Intervention <span class="req">*</span></div>
+        <div class="ffield">
+          <select id="f-intervention" style="max-width:280px">
+            <option value=""></option>
+            <option>Medical Assistance</option><option>Search and Rescue</option>
+            <option>Psychosocial Support</option><option>Food Distribution</option>
+            <option>Shelter</option><option>WASH</option><option>Referral</option>
+            <option>First Aid</option><option>Evacuation</option><option>Other</option>
+          </select>
+          <div class="ferr" id="err-intervention">Intervention type is required</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Comments</div>
+        <div class="ffield"><textarea id="f-comments" placeholder="Additional notes or observations…"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="flabel">Status <span class="req">*</span></div>
+        <div class="ffield">
+          <select id="f-status" style="max-width:200px">
+            <option value=""></option>
+            <option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option>
+          </select>
+          <div class="ferr" id="err-status">Status is required</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status-note"><span class="sdot"></span> Records are saved to your browser session.</div>
+</div>
+
+<!-- ══ USER PROFILES ══ -->
+<div class="view" id="p-user-profiles">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>User Profiles</span></div>
+  <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">User Profiles</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('user-profiles-add')">+ Add User</button></div><br>
+  <div class="profile-grid" id="profileGrid"></div>
+</div>
+
+<!-- ══ USER PROFILE ADD ══ -->
+<div class="view" id="p-user-profiles-add">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('user-profiles')">User Profiles</span><span class="sep">›</span><span>Add</span></div>
+  <div class="pg-title">Add User Profile</div>
+  <div class="fcard"><div class="fcard-hd">User Information</div><div class="fcard-body">
+    <div class="frow"><div class="flabel">Username <span class="req">*</span></div><div class="ffield"><input type="text" id="np-user" placeholder="username"><div class="ferr" id="err-np-user">Required</div></div></div>
+    <div class="frow"><div class="flabel">Email <span class="req">*</span></div><div class="ffield"><input type="email" id="np-email" placeholder="email@redcross.or.ke"><div class="ferr" id="err-np-email">Required</div></div></div>
+    <div class="frow"><div class="flabel">First Name</div><div class="ffield"><input type="text" id="np-first" placeholder="First name"></div></div>
+    <div class="frow"><div class="flabel">Last Name</div><div class="ffield"><input type="text" id="np-last" placeholder="Last name"></div></div>
+    <div class="frow"><div class="flabel">Role</div><div class="ffield"><select id="np-role" style="max-width:220px"><option value=""></option><option>Admin</option><option>Field Officer</option><option>Coordinator</option><option>Viewer</option></select></div></div>
+    <div class="frow"><div class="flabel">Active</div><div class="ffield"><select id="np-active" style="max-width:120px"><option value="1">Yes</option><option value="0">No</option></select></div></div>
+  </div></div>
+  <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
+    <button class="btn btn-ghost" onclick="nav('user-profiles')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+  </div>
+</div>
+
+<!-- ══ THEMES ══ -->
+<div class="view" id="p-themes">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Themes</span></div>
+  <div class="pg-title">Themes</div>
+  <p style="font-size:13px;color:var(--g500);margin-bottom:18px">Select the admin interface theme</p>
+  <div class="theme-grid" id="themeGrid"></div>
+</div>
+
+<!-- ══ ASSET REGISTER ══ -->
+<div class="view" id="p-assets">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Asset Register</span></div>
+  <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Asset Register</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('asset-add')">+ Add Asset</button></div><br>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Asset Name</th><th>Category</th><th>Serial No.</th><th>Location</th><th>Condition</th><th>Actions</th></tr></thead>
+    <tbody id="assetBody"></tbody>
+  </table><div class="empty-state" id="assetEmpty"><div class="ei">🗄️</div><p>No assets registered</p></div></div>
+</div>
+
+<!-- ══ ASSET ADD ══ -->
+<div class="view" id="p-asset-add">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('assets')">Asset Register</span><span class="sep">›</span><span>Add</span></div>
+  <div class="pg-title">Add Asset</div>
+  <div class="fcard"><div class="fcard-hd">Asset Details</div><div class="fcard-body">
+    <div class="frow"><div class="flabel">Asset Name <span class="req">*</span></div><div class="ffield"><input type="text" id="na-name" placeholder="e.g. Toyota Land Cruiser"><div class="ferr" id="err-na-name">Required</div></div></div>
+    <div class="frow"><div class="flabel">Category</div><div class="ffield"><select id="na-cat" style="max-width:220px"><option value=""></option><option>Vehicle</option><option>Medical Equipment</option><option>Communication</option><option>IT Equipment</option><option>Furniture</option><option>Other</option></select></div></div>
+    <div class="frow"><div class="flabel">Serial Number</div><div class="ffield"><input type="text" id="na-serial" placeholder="Serial / Asset tag"></div></div>
+    <div class="frow"><div class="flabel">Location</div><div class="ffield"><input type="text" id="na-loc" placeholder="e.g. Nairobi HQ"></div></div>
+    <div class="frow"><div class="flabel">Condition</div><div class="ffield"><select id="na-cond" style="max-width:180px"><option value=""></option><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option></select></div></div>
+  </div></div>
+  <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
+    <button class="btn btn-ghost" onclick="nav('assets')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveAsset()">Save Asset</button>
+  </div>
+</div>
+
+<!-- ══ TOKENS ══ -->
+<div class="view" id="p-tokens">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Auth Tokens</span></div>
+  <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Auth Tokens</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('token-add')">+ Generate Token</button></div><br>
+  <div class="fcard"><div id="tokenList"></div></div>
+</div>
+
+<!-- ══ TOKEN ADD ══ -->
+<div class="view" id="p-token-add">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('tokens')">Tokens</span><span class="sep">›</span><span>Generate</span></div>
+  <div class="pg-title">Generate Auth Token</div>
+  <div class="fcard"><div class="fcard-hd">Token Details</div><div class="fcard-body">
+    <div class="frow"><div class="flabel">Token Name <span class="req">*</span></div><div class="ffield"><input type="text" id="nt-name" placeholder="e.g. Mobile App Token"><div class="ferr" id="err-nt-name">Required</div></div></div>
+    <div class="frow"><div class="flabel">Assigned To</div><div class="ffield"><select id="nt-user" style="max-width:250px"><option value=""></option></select></div></div>
+    <div class="frow"><div class="flabel">Expiry</div><div class="ffield"><input type="date" id="nt-expiry" style="max-width:175px"><div class="fhint">Leave blank for no expiry</div></div></div>
+  </div></div>
+  <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
+    <button class="btn btn-ghost" onclick="nav('tokens')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveToken()">Generate Token</button>
+  </div>
+</div>
+
+<!-- ══ GROUPS ══ -->
+<div class="view" id="p-groups">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Groups</span></div>
+  <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Groups</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('group-add')">+ Add Group</button></div><br>
+  <div class="fcard"><div class="group-list" id="groupList"></div></div>
+</div>
+
+<!-- ══ GROUP ADD ══ -->
+<div class="view" id="p-group-add">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('groups')">Groups</span><span class="sep">›</span><span>Add</span></div>
+  <div class="pg-title">Add Group</div>
+  <div class="fcard"><div class="fcard-hd">Group Details</div><div class="fcard-body">
+    <div class="frow"><div class="flabel">Group Name <span class="req">*</span></div><div class="ffield"><input type="text" id="ng-name" placeholder="e.g. Field Officers"><div class="ferr" id="err-ng-name">Required</div></div></div>
+    <div class="frow"><div class="flabel">Permissions</div><div class="ffield">
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+        <label><input type="checkbox" id="perm-view"> Can view reports</label>
+        <label><input type="checkbox" id="perm-add"> Can add reports</label>
+        <label><input type="checkbox" id="perm-edit"> Can edit reports</label>
+        <label><input type="checkbox" id="perm-delete"> Can delete reports</label>
+        <label><input type="checkbox" id="perm-export"> Can export data</label>
+      </div>
+    </div></div>
+  </div></div>
+  <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
+    <button class="btn btn-ghost" onclick="nav('groups')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveGroup()">Save Group</button>
+  </div>
+</div>
+
+<!-- ══ DJANGO JOBS ══ -->
+<div class="view" id="p-django-jobs">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Django Jobs</span></div>
+  <div class="pg-title">Django Jobs</div>
+  <div class="fcard"><div id="jobList"></div></div>
+</div>
+
+<!-- ══ JOB EXECUTIONS ══ -->
+<div class="view" id="p-job-executions">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Job Executions</span></div>
+  <div class="pg-title">Django Job Executions</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Job ID</th><th>Run Time</th><th>Duration</th><th>Status</th><th>Output</th></tr></thead>
+    <tbody id="execBody"></tbody>
+  </table></div>
+</div>
+
+<!-- ══ SITUATION REPORTER ══ -->
+<div class="view" id="p-situation-reporter">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('incident-list')">Home</span><span class="sep">›</span><span>Situation Reporter</span></div>
+  <div class="form-actions-top"><div class="pg-title" style="margin-bottom:0">Situation Reporter</div>
+    <button class="btn btn-primary btn-sm" onclick="nav('situation-add')">+ New Situation Report</button></div><br>
+  <div id="sitrepList"></div>
+</div>
+
+<!-- ══ SITUATION ADD ══ -->
+<div class="view" id="p-situation-add">
+  <div class="breadcrumb"><span class="crumb" onclick="nav('situation-reporter')">Situation Reporter</span><span class="sep">›</span><span>Add</span></div>
+  <div class="pg-title">New Situation Report</div>
+  <div class="fcard"><div class="fcard-hd">Situation Report Details</div><div class="fcard-body">
+    <div class="frow"><div class="flabel">Title <span class="req">*</span></div><div class="ffield"><input type="text" id="ns-title" placeholder="e.g. Flood Response – Tana River"><div class="ferr" id="err-ns-title">Required</div></div></div>
+    <div class="frow"><div class="flabel">Incident Type</div><div class="ffield"><select id="ns-type" style="max-width:240px"><option value=""></option><option>Flood</option><option>Drought</option><option>Fire</option><option>Disease Outbreak</option><option>Displacement</option><option>Road Accident</option><option>Other</option></select></div></div>
+    <div class="frow"><div class="flabel">Affected County</div><div class="ffield"><select id="ns-county" style="max-width:240px"><option value=""></option><option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Nakuru</option><option>Garissa</option><option>Tana River</option><option>Turkana</option></select></div></div>
+    <div class="frow"><div class="flabel">Situation Summary <span class="req">*</span></div><div class="ffield"><textarea id="ns-summary" placeholder="Describe the situation…" style="min-height:120px"></textarea><div class="ferr" id="err-ns-summary">Required</div></div></div>
+    <div class="frow"><div class="flabel">People Affected</div><div class="ffield"><input type="text" id="ns-affected" placeholder="e.g. 5,000" style="max-width:160px"></div></div>
+    <div class="frow"><div class="flabel">Response Status</div><div class="ffield"><select id="ns-status" style="max-width:200px"><option value=""></option><option>Active</option><option>Monitoring</	option><option>Closed</	option></select></div></div>
+  </div></div>
+  <div class="act-bar" style="border:1px solid var(--g200);border-radius:6px;background:var(--g50)">
+    <button class="btn btn-ghost" onclick="nav('situation-reporter')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveSitrep()">Save Report</button>
+  </div>
+</div>
+
+</main>
+</div><!-- /shell -->
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal">
+    <div class="modal-hd"><h2 id="modalTitle">Details</h2><button class="close-btn" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-bg" id="confirmBg">
+  <div class="confirm-box">
+    <h3>Confirm Delete</h3>
+    <p id="confirmMsg">This action cannot be undone.</p>
+    <div class="cacts">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const S = {
+  ir: JSON.parse(localStorage.getItem('eoc_ir')||'[]'),
+  users: JSON.parse(localStorage.getItem('eoc_users')||JSON.stringify([
+    {id:'u1',username:'bonairhassan',email:'hindada.boneya@icha.net',first:'Bonair',last:'Hassan',role:'Admin',active:true},
+    {id:'u2',username:'jane.doe',email:'jane@redcross.or.ke',first:'Jane',last:'Doe',role:'Field Officer',active:true},
+    {id:'u3',username:'john.kamau',email:'jkamau@redcross.or.ke',first:'John',last:'Kamau',role:'Coordinator',active:false},
+  ])),
+  assets: JSON.parse(localStorage.getItem('eoc_assets')||JSON.stringify([
+    {id:'a1',name:'Toyota Land Cruiser',cat:'Vehicle',serial:'KCB 001X',loc:'Nairobi HQ',cond:'Good'},
+    {id:'a2',name:'Portable Radio Set',cat:'Communication',serial:'RAD-2024-01',loc:'Field Store',cond:'Excellent'},
+    {id:'a3',name:'First Aid Kit (Large)',cat:'Medical Equipment',serial:'FAK-100',loc:'Kisumu Office',cond:'Fair'},
+  ])),
+  tokens: JSON.parse(localStorage.getItem('eoc_tokens')||JSON.stringify([
+    {id:'t1',name:'Mobile App Token',user:'bonairhassan',key:'eoc_'+rand(32),created:'2025-01-15',expiry:'2026-01-15'},
+    {id:'t2',name:'API Integration',user:'jane.doe',key:'eoc_'+rand(32),created:'2025-03-01',expiry:''},
+  ])),
+  groups: JSON.parse(localStorage.getItem('eoc_groups')||JSON.stringify([
+    {id:'g1',name:'Administrators',perms:['view','add','edit','delete','export'],users:2},
+    {id:'g2',name:'Field Officers',perms:['view','add','edit'],users:8},
+    {id:'g3',name:'Viewers',perms:['view'],users:14},
+  ])),
+  sitreps: JSON.parse(localStorage.getItem('eoc_sitreps')||JSON.stringify([
+    {id:'s1',title:'Flood Response – Tana River',type:'Flood',county:'Tana River',summary:'Severe flooding affecting 12,000 people. Red Cross teams deployed for evacuation and relief distribution.',affected:'12,000',status:'Active',date:'2026-03-10'},
+    {id:'s2',title:'Drought Monitoring – Turkana',type:'Drought',county:'Turkana',summary:'Ongoing drought conditions. Food insecurity levels remain high. Distribution ongoing.',affected:'45,000',status:'Monitoring',date:'2026-02-28'},
+  ])),
+  editId: null,
+  confirmCb: null,
+  activeTheme: 'default',
+};
+
+function save(key,val){localStorage.setItem(key,JSON.stringify(val))}
+function rand(n){let s='';const c='abcdefghijklmnopqrstuvwxyz0123456789';for(let i=0;i<n;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+let map, marker;
+const pages = ['incident-list','incident-add','user-profiles','user-profiles-add','themes',
+  'assets','asset-add','tokens','token-add','groups','group-add',
+  'django-jobs','job-executions','situation-reporter','situation-add'];
+
+function nav(page) {
+  pages.forEach(p => {
+    const el = document.getElementById('p-'+p);
+    if(el) el.classList.toggle('active', p===page);
+  });
+  // update active sidebar item
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  const map2 = {
+    'incident-list':'nav-incident','incident-add':'nav-incident',
+    'user-profiles':'nav-user','user-profiles-add':'nav-user',
+    'themes':'nav-themes','assets':'nav-assets','asset-add':'nav-assets',
+    'tokens':'nav-tokens','token-add':'nav-tokens',
+    'groups':'nav-groups','group-add':'nav-groups',
+    'django-jobs':'nav-django-jobs','job-executions':'nav-job-exec',
+    'situation-reporter':'nav-sitrep','situation-add':'nav-sitrep',
+  };
+  const nav_id = map2[page];
+  if(nav_id){ const el=document.getElementById(nav_id); if(el) el.classList.add('active'); }
+
+  // render content for the page
+  const renders = {
+    'incident-list': renderIR,
+    'user-profiles': renderUsers,
+    'themes': renderThemes,
+    'assets': renderAssets,
+    'tokens': renderTokens,
+    'groups': renderGroups,
+    'django-jobs': renderJobs,
+    'job-executions': renderExecs,
+    'situation-reporter': renderSitreps,
+    'token-add': populateUserSelect,
+  };
+  if(renders[page]) renders[page]();
+
+  if(page==='incident-add' && !S.editId) resetForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════
+function toggleSb(){
+  const sb=document.getElementById('sidebar');
+  const btn=document.getElementById('sbToggle');
+  sb.classList.toggle('collapsed');
+  btn.classList.toggle('moved');
+  btn.innerHTML = sb.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
+}
+function toggleGrp(hd){
+  hd.classList.toggle('closed');
+  hd.nextElementSibling.classList.toggle('hidden');
+}
+function filterSb(q){
+  const lq=q.toLowerCase();
+  document.querySelectorAll('.sb-group').forEach(g=>{
+    const key=g.dataset.key||'';
+    const items=g.querySelectorAll('.sb-item,.sb-sub');
+    let any = key.includes(lq);
+    items.forEach(it=>{
+      const m=(it.dataset.label||'').includes(lq)||!lq;
+      it.style.display=m?'':'none';
+      if(m) any=true;
+    });
+    g.style.display=(any||!lq)?'':'none';
+    if(lq&&any){
+      g.querySelector('.sb-body').classList.remove('hidden');
+      g.querySelector('.sb-hd').classList.remove('closed');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════
+function initMap(){
+  map=L.map('leaflet-map').setView([-1.286389,36.817223],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  marker=L.marker([-1.286389,36.817223],{draggable:true}).addTo(map);
+  marker.on('dragend',e=>{
+    const p=e.target.getLatLng();
+    document.getElementById('f-lat').value=p.lat.toFixed(6);
+    document.getElementById('f-lng').value=p.lng.toFixed(6);
+  });
+  map.on('click',e=>{
+    marker.setLatLng(e.latlng);
+    document.getElementById('f-lat').value=e.latlng.lat.toFixed(6);
+    document.getElementById('f-lng').value=e.latlng.lng.toFixed(6);
+  });
+}
+function onLocInput(v){clearTimeout(window._gt);if(v.trim())window._gt=setTimeout(()=>geocode(v),800)}
+function onCounty(){const v=document.getElementById('f-county').value;if(v)geocode(v+' County, Kenya')}
+function geocode(q){
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q+', Kenya')}&limit=1`)
+    .then(r=>r.json()).then(d=>{
+      if(d&&d[0]){const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon);
+        map.setView([lat,lng],14);marker.setLatLng([lat,lng]);
+        document.getElementById('f-lat').value=lat.toFixed(6);
+        document.getElementById('f-lng').value=lng.toFixed(6);
+      }
+    }).catch(()=>{});
+}
+function onGeoIn(){
+  const lat=parseFloat(document.getElementById('f-lat').value),lng=parseFloat(document.getElementById('f-lng').value);
+  if(!isNaN(lat)&&!isNaN(lng)){map.setView([lat,lng],14);marker.setLatLng([lat,lng]);}
+}
+function myLoc(){
+  if(!navigator.geolocation){toast('Geolocation not supported','error');return}
+  toast('Getting your location…','info');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const lat=p.coords.latitude,lng=p.coords.longitude;
+    document.getElementById('f-lat').value=lat.toFixed(6);
+    document.getElementById('f-lng').value=lng.toFixed(6);
+    map.setView([lat,lng],15);marker.setLatLng([lat,lng]);
+    toast('Location detected','success');
+  },()=>toast('Could not get location','error'));
+}
+
+// ═══════════════════════════════════════════
+// DATE/TIME
+// ═══════════════════════════════════════════
+function setToday(){document.getElementById('f-date').valueAsDate=new Date()}
+function setNow(){const n=new Date();document.getElementById('f-time').value=pad(n.getHours())+':'+pad(n.getMinutes())}
+function pad(n){return String(n).padStart(2,'0')}
+
+// ═══════════════════════════════════════════
+// INCIDENT REPORTER CRUD
+// ═══════════════════════════════════════════
+function validateIR(){
+  let ok=true;
+  const checks=[
+    {ids:['f-date','f-time'],err:'err-date',fn:()=>!!document.getElementById('f-date').value&&!!document.getElementById('f-time').value},
+    {ids:['f-name'],err:'err-name',fn:()=>document.getElementById('f-name').value.trim().length>1},
+    {ids:['f-phone'],err:'err-phone',fn:()=>document.getElementById('f-phone').value.trim().length>4},
+    {ids:['f-county'],err:'err-county',fn:()=>!!document.getElementById('f-county').value},
+    {ids:['f-location'],err:'err-location',fn:()=>document.getElementById('f-location').value.trim().length>1},
+    {ids:['f-intervention'],err:'err-intervention',fn:()=>!!document.getElementById('f-intervention').value},
+    {ids:['f-status'],err:'err-status',fn:()=>!!document.getElementById('f-status').value},
+  ];
+  checks.forEach(c=>{
+    const valid=c.fn();
+    c.ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('invalid',!valid)});
+    const errEl=document.getElementById(c.err);if(errEl)errEl.classList.toggle('show',!valid);
+    if(!valid)ok=false;
+  });
+  return ok;
+}
+function clearErrs(){
+  document.querySelectorAll('.invalid').forEach(e=>e.classList.remove('invalid'));
+  document.querySelectorAll('.ferr.show').forEach(e=>e.classList.remove('show'));
+}
+function getIRData(){
+  return{
+    id:S.editId||('ir'+Date.now()),
+    date:document.getElementById('f-date').value,
+    time:document.getElementById('f-time').value,
+    name:document.getElementById('f-name').value.trim(),
+    gender:document.getElementById('f-gender').value,
+    phone:document.getElementById('f-phone').value.trim(),
+    county:document.getElementById('f-county').value,
+    location:document.getElementById('f-location').value.trim(),
+    lat:document.getElementById('f-lat').value,
+    lng:document.getElementById('f-lng').value,
+    intervention:document.getElementById('f-intervention').value,
+    comments:document.getElementById('f-comments').value.trim(),
+    status:document.getElementById('f-status').value,
+    created:S.editId?(S.ir.find(r=>r.id===S.editId)||{}).created||new Date().toISOString():new Date().toISOString(),
+  };
+}
+function saveIR(redirect){
+  if(!validateIR()){toast('Please fill in all required fields','error');return false}
+  const d=getIRData();
+  if(S.editId){const i=S.ir.findIndex(r=>r.id===S.editId);if(i>=0)S.ir[i]=d;toast('Record updated','success')}
+  else{S.ir.unshift(d);toast('Incident report saved','success')}
+  save('eoc_ir',S.ir);
+  return true;
+}
+function saveAndAnother(){if(!saveIR())return;S.editId=null;resetForm();nav('incident-add')}
+function saveAndContinue(){if(!saveIR())return;if(!S.editId)S.editId=S.ir[0].id;document.getElementById('irFormTitle').textContent='Edit Incident Reporter';document.getElementById('irAddCrumbLabel').textContent='Edit';}
+function resetForm(){
+  S.editId=null;
+  document.getElementById('irFormTitle').textContent='Add Incident Reporter';
+  document.getElementById('irAddCrumbLabel').textContent='Add Incident Reporter';
+  ['f-name','f-phone','f-location','f-lat','f-lng','f-comments'].forEach(id=>document.getElementById(id).value='');
+  ['f-gender','f-county','f-intervention','f-status'].forEach(id=>document.getElementById(id).value='');
+  setToday();setNow();clearErrs();
+  if(map&&marker){map.setView([-1.286389,36.817223],11);marker.setLatLng([-1.286389,36.817223]);}
+}
+
+function renderIR(){
+  const q=(document.getElementById('irSearch').value||'').toLowerCase();
+  const sf=document.getElementById('irStatusF').value;
+  let rows=S.ir.filter(r=>{
+    const mq=!q||[r.name,r.phone,r.county,r.location,r.intervention,r.status].some(v=>(v||'').toLowerCase().includes(q));
+    const ms=!sf||r.status===sf;
+    return mq&&ms;
+  });
+  const tbody=document.getElementById('irBody');
+  const empty=document.getElementById('irEmpty');
+  tbody.innerHTML=rows.length===0?'':(empty.style.display='none',rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td style="font-family:var(--mono);font-size:11.5px;white-space:nowrap">${r.date}<br><span style="color:var(--g500)">${r.time}</span></td>
+      <td class="bold">${esc(r.name)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${esc(r.phone)}</td>
+      <td>${esc(r.county)}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.location)}">${esc(r.location)}</td>
+      <td>${esc(r.intervention)}</td>
+      <td><span class="badge ${bc(r.status)}">${esc(r.status)}</span></td>
+      <td style="white-space:nowrap;display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="viewIR('${r.id}')">View</button>
+        <button class="btn btn-ghost btn-xs" onclick="editIR('${r.id}')">Edit</button>
+        <button class="btn btn-danger btn-xs" onclick="delIR('${r.id}')">Del</button>
+      </td>
+    </tr>`).join(''));
+  empty.style.display=rows.length===0?'block':'none';
+}
+
+function viewIR(id){
+  const r=S.ir.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modalTitle').textContent='Incident Report Details';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="detail-grid">
+      ${dr('Date',r.date)}${dr('Time',r.time)}
+      ${dr('Caller Name',r.name)}${dr('Gender',r.gender||'')}
+      ${dr('Phone',r.phone)}${dr('County',r.county)}
+      ${dr('Location',r.location)}${dr('Geolocation',r.lat&&r.lng?r.lat+', '+r.lng:'')}
+      ${dr('Intervention',r.intervention)}${dr('Status','<span class="badge '+bc(r.status)+'">'+esc(r.status)+'</span>')}
+    </div>
+    ${r.comments?`<div style="margin-top:14px"><div class="d-label" style="font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Comments</div><div style="background:var(--g50);border:1px solid var(--g200);border-radius:4px;padding:10px 14px;font-size:13px;white-space:pre-wrap">${esc(r.comments)}</div></div>`:''}`;
+  document.getElementById('modalFooter').innerHTML=`<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-primary btn-sm" onclick="closeModal();editIR('${id}')">Edit</button>`;
+  openModal();
+}
+function editIR(id){
+  const r=S.ir.find(x=>x.id===id);if(!r)return;
+  S.editId=id;nav('incident-add');
+  document.getElementById('irFormTitle').textContent='Edit Incident Reporter';
+  document.getElementById('irAddCrumbLabel').textContent='Edit';
+  document.getElementById('f-date').value=r.date;
+  document.getElementById('f-time').value=r.time;
+  document.getElementById('f-name').value=r.name;
+  document.getElementById('f-gender').value=r.gender;
+  document.getElementById('f-phone').value=r.phone;
+  document.getElementById('f-county').value=r.county;
+  document.getElementById('f-location').value=r.location;
+  document.getElementById('f-lat').value=r.lat;
+  document.getElementById('f-lng').value=r.lng;
+  document.getElementById('f-intervention').value=r.intervention;
+  document.getElementById('f-comments').value=r.comments;
+  document.getElementById('f-status').value=r.status;
+  clearErrs();
+  if(r.lat&&r.lng){const lt=parseFloat(r.lat),ln=parseFloat(r.lng);if(!isNaN(lt)&&!isNaN(ln)){map.setView([lt,ln],14);marker.setLatLng([lt,ln]);}}
+}
+function delIR(id){confirm2('Delete this incident report?',()=>{S.ir=S.ir.filter(r=>r.id!==id);save('eoc_ir',S.ir);renderIR();toast('Record deleted','success')})}
+
+// ═══════════════════════════════════════════
+// USER PROFILES
+// ═══════════════════════════════════════════
+function renderUsers(){
+  const grid=document.getElementById('profileGrid');
+  grid.innerHTML=S.users.map(u=>`
+    <div class="profile-card" onclick="viewUser('${u.id}')">
+      <div class="avatar">${(u.first||u.username||'?')[0].toUpperCase()}</div>
+      <div class="profile-info">
+        <div class="name">${esc(u.first+' '+u.last)}</div>
+        <div class="role">${esc(u.role||'User')}</div>
+        <div class="role"><span class="status-dot" style="background:${u.active?'#4CAF50':'#bbb'}"></span>${u.active?'Active':'Inactive'}</div>
+      </div>
+    </div>`).join('');
+}
+function viewUser(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  document.getElementById('modalTitle').textContent='User Profile';
+  document.getElementById('modalBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="avatar" style="width:56px;height:56px;font-size:22px">${(u.first||u.username||'?')[0].toUpperCase()}</div>
+      <div><div style="font-size:16px;font-weight:700">${esc(u.first+' '+u.last)}</div><div style="color:var(--g500);font-size:12.5px">${esc(u.email)}</div></div>
+    </div>
+    <div class="detail-grid">
+      ${dr('Username',u.username)}${dr('Role',u.role||'')}
+      ${dr('Email',u.email)}${dr('Status',u.active?'<span class="badge badge-act">Active</span>':'<span class="badge badge-ina">Inactive</span>')}
+    </div>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    <button class="btn btn-danger btn-sm" onclick="closeModal();delUser('${id}')">Delete</button>`;
+  openModal();
+}
+function saveUser(){
+  const username=document.getElementById('np-user').value.trim();
+  const email=document.getElementById('np-email').value.trim();
+  let ok=true;
+  if(!username){document.getElementById('err-np-user').classList.add('show');ok=false}else document.getElementById('err-np-user').classList.remove('show');
+  if(!email){document.getElementById('err-np-email').classList.add('show');ok=false}else document.getElementById('err-np-email').classList.remove('show');
+  if(!ok){toast('Fill required fields','error');return}
+  S.users.push({id:'u'+Date.now(),username,email,first:document.getElementById('np-first').value.trim(),last:document.getElementById('np-last').value.trim(),role:document.getElementById('np-role').value,active:document.getElementById('np-active').value==='1'});
+  save('eoc_users',S.users);
+  toast('User profile saved','success');nav('user-profiles');
+}
+function delUser(id){confirm2('Delete this user?',()=>{S.users=S.users.filter(u=>u.id!==id);save('eoc_users',S.users);renderUsers();toast('User deleted','success')})}
+
+// ═══════════════════════════════════════════
+// THEMES
+// ═══════════════════════════════════════════
+const THEMES=[
+  {id:'default',label:'Red Cross (Default)',bar:'#CC0000',sidebar:'#f9f9f9',content:'#F5F3F1'},
+  {id:'dark',label:'Dark Mode',bar:'#18161E',sidebar:'#1E1C24',content:'#121016'},
+  {id:'navy',label:'Ocean Navy',bar:'#0D3B6E',sidebar:'#f0f4f8',content:'#e8edf2'},
+  {id:'forest',label:'Forest Green',bar:'#1B5E20',sidebar:'#f1f8f2',content:'#e8f5e9'},
+  {id:'slate',label:'Slate Pro',bar:'#37474F',sidebar:'#f5f5f5',content:'#ECEFF1'},
+  {id:'warmth',label:'Warmth',bar:'#BF360C',sidebar:'#fdf5f0',content:'#fef9f5'},
+];
+function renderThemes(){
+  const grid=document.getElementById('themeGrid');
+  grid.innerHTML=THEMES.map(t=>`
+    <div class="theme-card${S.activeTheme===t.id?' selected':''}" onclick="applyTheme('${t.id}')">
+      <div class="theme-preview">
+        <div class="theme-bar" style="background:${t.bar}"></div>
+        <div class="theme-body">
+          <div class="theme-sidebar" style="background:${t.sidebar}"></div>
+          <div class="theme-content" style="background:${t.content}"></div>
+        </div>
+      </div>
+      <div class="theme-label">${t.label}${S.activeTheme===t.id?' <span style="color:var(--red);font-size:11px">✓ Active</span>':''}</div>
+    </div>`).join('');
+}
+function applyTheme(id){
+  S.activeTheme=id;
+  const t=THEMES.find(x=>x.id===id);
+  if(t){
+    document.querySelector('.site-header').style.background=t.bar;
+    document.querySelectorAll('.sb-hd').forEach(el=>el.style.background=t.bar);
+    document.querySelector('body').style.background=t.content;
+  }
+  renderThemes();toast('Theme applied: '+t.label,'success');
+}
+
+// ═══════════════════════════════════════════
+// ASSETS
+// ═══════════════════════════════════════════
+function renderAssets(){
+  const body=document.getElementById('assetBody');
+  const empty=document.getElementById('assetEmpty');
+  body.innerHTML=S.assets.map((a,i)=>`
+    <tr>
+      <td>${i+1}</td><td class="bold">${esc(a.name)}</td><td>${esc(a.cat)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${esc(a.serial)}</td>
+      <td>${esc(a.loc)}</td>
+      <td><span class="badge ${condBadge(a.cond)}">${esc(a.cond)}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="viewAsset('${a.id}')">View</button>
+        <button class="btn btn-danger btn-xs" onclick="delAsset('${a.id}')">Del</button>
+      </td>
+    </tr>`).join('');
+  empty.style.display=S.assets.length===0?'block':'none';
+}
+function condBadge(c){return{Excellent:'badge-res',Good:'badge-act',Fair:'badge-low',Poor:'badge-med'}[c]||''}
+function viewAsset(id){
+  const a=S.assets.find(x=>x.id===id);if(!a)return;
+  document.getElementById('modalTitle').textContent='Asset Details';
+  document.getElementById('modalBody').innerHTML=`<div class="detail-grid">${dr('Name',a.name)}${dr('Category',a.cat)}${dr('Serial',a.serial)}${dr('Location',a.loc)}${dr('Condition',a.cond)}</div>`;
+  document.getElementById('modalFooter').innerHTML=`<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-danger btn-sm" onclick="closeModal();delAsset('${id}')">Delete</button>`;
+  openModal();
+}
+function saveAsset(){
+  const name=document.getElementById('na-name').value.trim();
+  if(!name){document.getElementById('err-na-name').classList.add('show');toast('Asset name required','error');return}
+  document.getElementById('err-na-name').classList.remove('show');
+  S.assets.push({id:'a'+Date.now(),name,cat:document.getElementById('na-cat').value,serial:document.getElementById('na-serial').value.trim(),loc:document.getElementById('na-loc').value.trim(),cond:document.getElementById('na-cond').value});
+  save('eoc_assets',S.assets);toast('Asset saved','success');nav('assets');
+}
+function delAsset(id){confirm2('Delete this asset?',()=>{S.assets=S.assets.filter(a=>a.id!==id);save('eoc_assets',S.assets);renderAssets();toast('Asset deleted','success')})}
+
+// ═══════════════════════════════════════════
+// TOKENS
+// ═══════════════════════════════════════════
+function renderTokens(){
+  const list=document.getElementById('tokenList');
+  list.innerHTML=S.tokens.length===0?`<div class="empty-state"><div class="ei">🔑</div><p>No tokens yet</p></div>`:
+    S.tokens.map(t=>`
+      <div class="token-row">
+        <div class="token-name">${esc(t.name)}</div>
+        <div class="token-key" title="Click to copy" onclick="copyToken('${t.key}')">${t.key}</div>
+        <div class="token-date">${t.expiry||'No expiry'}</div>
+        <button class="btn btn-danger btn-xs" onclick="delToken('${t.id}')">Revoke</button>
+      </div>`).join('');
+}
+function copyToken(key){navigator.clipboard.writeText(key).then(()=>toast('Token copied to clipboard','success')).catch(()=>toast('Could not copy','error'))}
+function populateUserSelect(){
+  const sel=document.getElementById('nt-user');
+  sel.innerHTML='<option value=""></option>'+S.users.map(u=>`<option value="${u.id}">${esc(u.username)}</option>`).join('');
+}
+function saveToken(){
+  const name=document.getElementById('nt-name').value.trim();
+  if(!name){document.getElementById('err-nt-name').classList.add('show');toast('Token name required','error');return}
+  document.getElementById('err-nt-name').classList.remove('show');
+  const uid=document.getElementById('nt-user').value;
+  const u=S.users.find(x=>x.id===uid);
+  S.tokens.push({id:'t'+Date.now(),name,user:u?u.username:'',key:'eoc_'+rand(32),created:new Date().toISOString().slice(0,10),expiry:document.getElementById('nt-expiry').value});
+  save('eoc_tokens',S.tokens);toast('Token generated','success');nav('tokens');
+}
+function delToken(id){confirm2('Revoke this token?',()=>{S.tokens=S.tokens.filter(t=>t.id!==id);save('eoc_tokens',S.tokens);renderTokens();toast('Token revoked','success')})}
+
+// ═══════════════════════════════════════════
+// GROUPS
+// ═══════════════════════════════════════════
+function renderGroups(){
+  const list=document.getElementById('groupList');
+  list.innerHTML=S.groups.map(g=>`
+    <div class="group-item" onclick="viewGroup('${g.id}')">
+      <div>
+        <div class="gname">${esc(g.name)}</div>
+        <div class="gmeta">${g.users||0} member(s) · ${(g.perms||[]).join(', ')}</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();delGroup('${g.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+function viewGroup(id){
+  const g=S.groups.find(x=>x.id===id);if(!g)return;
+  document.getElementById('modalTitle').textContent='Group: '+g.name;
+  document.getElementById('modalBody').innerHTML=`
+    <div class="detail-grid">
+      ${dr('Group Name',g.name)}${dr('Members',g.users||0)}
+      ${dr('Permissions',(g.perms||[]).join(', ')||'')}
+    </div>`;
+  document.getElementById('modalFooter').innerHTML=`<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-danger btn-sm" onclick="closeModal();delGroup('${id}')">Delete</button>`;
+  openModal();
+}
+function saveGroup(){
+  const name=document.getElementById('ng-name').value.trim();
+  if(!name){document.getElementById('err-ng-name').classList.add('show');toast('Group name required','error');return}
+  document.getElementById('err-ng-name').classList.remove('show');
+  const perms=['view','add','edit','delete','export'].filter(p=>document.getElementById('perm-'+p).checked);
+  S.groups.push({id:'g'+Date.now(),name,perms,users:0});
+  save('eoc_groups',S.groups);toast('Group saved','success');nav('groups');
+}
+function delGroup(id){confirm2('Delete this group?',()=>{S.groups=S.groups.filter(g=>g.id!==id);save('eoc_groups',S.groups);renderGroups();toast('Group deleted','success')})}
+
+// ═══════════════════════════════════════════
+// DJANGO JOBS
+// ═══════════════════════════════════════════
+const JOBS=[
+  {id:'j1',name:'sync_incidents',schedule:'*/15 * * * *',next:'2026-03-19 14:15',active:true},
+  {id:'j2',name:'generate_daily_report',schedule:'0 6 * * *',next:'2026-03-20 06:00',active:true},
+  {id:'j3',name:'cleanup_old_logs',schedule:'0 0 * * 0',next:'2026-03-22 00:00',active:false},
+  {id:'j4',name:'send_sms_alerts',schedule:'*/5 * * * *',next:'2026-03-19 14:05',active:true},
+];
+function renderJobs(){
+  document.getElementById('jobList').innerHTML=`<div>${JOBS.map(j=>`
+    <div class="job-row">
+      <div class="job-status" style="background:${j.active?'#4CAF50':'#bbb'}"></div>
+      <div class="job-name">${j.name}</div>
+      <div class="job-schedule">${j.schedule}</div>
+      <div class="job-next">Next: ${j.next}</div>
+      <button class="btn btn-ghost btn-xs" onclick="toast('Job ${j.name} triggered','info')">${j.active?'Run Now':'Enable'}</button>
+    </div>`).join('')}</div>`;
+}
+function renderExecs(){
+  const rows=[
+    {jid:'sync_incidents',run:'2026-03-19 14:00',dur:'0.4s',status:'Success',out:'12 records synced'},
+    {jid:'generate_daily_report',run:'2026-03-19 06:00',dur:'2.1s',status:'Success',out:'Report emailed to 5 users'},
+    {jid:'sync_incidents',run:'2026-03-19 13:45',dur:'0.3s',status:'Success',out:'0 records synced'},
+    {jid:'send_sms_alerts',run:'2026-03-19 13:55',dur:'1.2s',status:'Failed',out:'Connection timeout'},
+    {jid:'cleanup_old_logs',run:'2026-03-16 00:00',dur:'0.8s',status:'Success',out:'234 logs removed'},
+  ];
+  document.getElementById('execBody').innerHTML=rows.map(r=>`
+    <tr>
+      <td style="font-family:var(--mono);font-size:12px">${r.jid}</td>
+      <td style="font-family:var(--mono);font-size:12px">${r.run}</td>
+      <td>${r.dur}</td>
+      <td><span class="badge ${r.status==='Success'?'badge-res':'badge-med'}">${r.status}</span></td>
+      <td style="font-size:12px;color:var(--g500)">${r.out}</td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// SITUATION REPORTER
+// ═══════════════════════════════════════════
+function renderSitreps(){
+  const div=document.getElementById('sitrepList');
+  div.innerHTML=S.sitreps.length===0?`<div class="empty-state"><div class="ei">📡</div><p>No situation reports yet</p></div>`:
+    S.sitreps.map(s=>`
+      <div class="sitrep-card">
+        <div class="sr-hd">
+          <div>
+            <div class="sr-title">${esc(s.title)}</div>
+            <div class="sr-meta">${esc(s.type)} · ${esc(s.county)} · ${s.date}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge ${s.status==='Active'?'badge-open':s.status==='Monitoring'?'badge-prog':'badge-cls'}">${esc(s.status)}</span>
+            <button class="btn btn-danger btn-xs" onclick="delSitrep('${s.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="sr-body">${esc(s.summary)}</div>
+        ${s.affected?`<div style="margin-top:8px;font-size:12px;color:var(--g500)">👥 <strong>${esc(s.affected)}</strong> people affected</div>`:''}
+      </div>`).join('');
+}
+function saveSitrep(){
+  const title=document.getElementById('ns-title').value.trim();
+  const summary=document.getElementById('ns-summary').value.trim();
+  let ok=true;
+  if(!title){document.getElementById('err-ns-title').classList.add('show');ok=false}else document.getElementById('err-ns-title').classList.remove('show');
+  if(!summary){document.getElementById('err-ns-summary').classList.add('show');ok=false}else document.getElementById('err-ns-summary').classList.remove('show');
+  if(!ok){toast('Fill required fields','error');return}
+  S.sitreps.unshift({id:'s'+Date.now(),title,type:document.getElementById('ns-type').value,county:document.getElementById('ns-county').value,summary,affected:document.getElementById('ns-affected').value.trim(),status:document.getElementById('ns-status').value||'Active',date:new Date().toISOString().slice(0,10)});
+  save('eoc_sitreps',S.sitreps);toast('Situation report saved','success');nav('situation-reporter');
+}
+function delSitrep(id){confirm2('Delete this situation report?',()=>{S.sitreps=S.sitreps.filter(s=>s.id!==id);save('eoc_sitreps',S.sitreps);renderSitreps();toast('Report deleted','success')})}
+
+// ═══════════════════════════════════════════
+// CHANGE PASSWORD MODAL
+// ═══════════════════════════════════════════
+function openChangePassword(){
+  document.getElementById('modalTitle').textContent='Change Password';
+  document.getElementById('modalBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label style="font-size:12px;font-weight:500;color:var(--g700);display:block;margin-bottom:4px">Current Password</label><input type="password" id="cp-old" placeholder="Current password" style="width:100%"></div>
+      <div><label style="font-size:12px;font-weight:500;color:var(--g700);display:block;margin-bottom:4px">New Password</label><input type="password" id="cp-new" placeholder="New password" style="width:100%"></div>
+      <div><label style="font-size:12px;font-weight:500;color:var(--g700);display:block;margin-bottom:4px">Confirm New Password</label><input type="password" id="cp-conf" placeholder="Confirm password" style="width:100%"></div>
+    </div>`;
+  document.getElementById('modalFooter').innerHTML=`<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="changePassword()">Change Password</button>`;
+  openModal();
+}
+function changePassword(){
+  const np=document.getElementById('cp-new').value;
+  const cp=document.getElementById('cp-conf').value;
+  if(!np){toast('Enter a new password','error');return}
+  if(np!==cp){toast('Passwords do not match','error');return}
+  if(np.length<8){toast('Password must be at least 8 characters','error');return}
+  closeModal();toast('Password changed successfully','success');
+}
+
+// ═══════════════════════════════════════════
+// MODAL / CONFIRM / TOAST UTILS
+// ═══════════════════════════════════════════
+function openModal(){document.getElementById('detailModal').classList.add('open')}
+function closeModal(){document.getElementById('detailModal').classList.remove('open')}
+document.getElementById('detailModal').addEventListener('click',e=>{if(e.target===document.getElementById('detailModal'))closeModal()})
+
+function confirm2(msg,cb){
+  document.getElementById('confirmMsg').textContent=msg;
+  S.confirmCb=cb;
+  document.getElementById('confirmBg').classList.add('open');
+}
+document.getElementById('confirmOk').onclick=()=>{if(S.confirmCb)S.confirmCb();closeConfirm()}
+function closeConfirm(){document.getElementById('confirmBg').classList.remove('open');S.confirmCb=null}
+document.getElementById('confirmBg').addEventListener('click',e=>{if(e.target===document.getElementById('confirmBg'))closeConfirm()})
+
+function toast(msg,type='info'){
+  const icons={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span><button class="toast-x" onclick="this.parentElement.remove()">×</button>`;
+  wrap.appendChild(t);
+  setTimeout(()=>{t.style.animation='tOut .35s forwards';setTimeout(()=>t.remove(),350)},3500);
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function bc(s){return{Open:'badge-open','In Progress':'badge-prog',Resolved:'badge-res',Closed:'badge-cls'}[s]||'badge-open'}
+function dr(label,val){return`<div class="d-row"><div class="d-label">${label}</div><div class="d-val">${val||''}</div></div>`}
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initMap();
+  setToday();setNow();
+  // add IDs to nav items for active state tracking
+  const navMap={
+    'user-profiles':'nav-user','themes':'nav-themes','assets':'nav-assets',
+    'tokens':'nav-tokens','groups':'nav-groups','django-jobs':'nav-django-jobs',
+    'job-executions':'nav-job-exec','situation-reporter':'nav-sitrep',
+  };
+  // already set in HTML for incident reporter, assign others dynamically
+  document.querySelectorAll('.sb-item').forEach(el=>{
+    const lbl=el.dataset.label||'';
+    if(lbl==='user profiles')el.id='nav-user';
+    else if(lbl==='themes')el.id='nav-themes';
+    else if(lbl==='asset register')el.id='nav-assets';
+    else if(lbl==='tokens')el.id='nav-tokens';
+    else if(lbl==='groups')el.id='nav-groups';
+    else if(lbl==='django jobs')el.id='nav-django-jobs';
+    else if(lbl==='django job executions')el.id='nav-job-exec';
+    else if(lbl==='situation reporter')el.id='nav-sitrep';
+  });
+  renderIR();
+});
+</script>
+</body>
+</html>
